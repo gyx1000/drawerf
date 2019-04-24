@@ -201,10 +201,10 @@
         if(e.keyCode == 70) this.flipImage();
 
         if(this.shiftPressed) {
-          if(e.keyCode == 107) {
+          if(e.keyCode == 107 || e.keyCode == 87) {
             this.gridPlus();
           }
-          if(e.keyCode == 109) {
+          if(e.keyCode == 109 || e.keyCode == 83) {
             this.gridMinus();
           }
         }
