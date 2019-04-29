@@ -7,8 +7,18 @@
           <v-image :config="imageConfig" ref="image"></v-image>
           <v-line v-for="col in grid.cols" :config="col" :key="col.key"></v-line>
           <v-line v-for="row in grid.rows" :config="row" :key="row.key"></v-line>
+
+          <v-line :config="helper.top"></v-line>
+          <v-line :config="helper.bottom"></v-line>
+          <v-line :config="helper.left"></v-line>
+          <v-line :config="helper.right"></v-line>
+        </v-layer>
+        <v-layer>
         </v-layer>
       </v-stage>
+    </div>
+    <div id="infos" v-show="imageData != null && showInfo">
+      <div><label>Grid Size</label> {{ gridSize }}</div>
     </div>
   </div>
 </template>
@@ -24,6 +34,7 @@
     data: function() {
       return {
         gridColor: "#ddd",
+        helperColor: "red",
         stageWidth: 100,
         stageHeight: 100,
         imageWidth: 1,
@@ -31,17 +42,30 @@
         stageScale: 1,
         imageData: null,
         gridSize: 20,
+        helperSizeX: 1,
+        helperSizeY: 1,
+        helperStartX: 0,
+        helperStartY: 0,
+        showHelper: true,
         grayScale: false,
+        altPressed: false,
         shiftPressed: false,
+        ctrlPressed: false,
         showGrid: true,
         fliped: false,
-        initialized: false
+        initialized: false,
+        showInfo: false
       }
     },
     methods: {
       storeConfig: function() {
         localStorage.clear();
+
         localStorage.gridSize = this.gridSize;
+        localStorage.helperSizeX = this.helperSizeX;
+        localStorage.helperSizeY = this.helperSizeY;
+        localStorage.helperStartX = this.helperStartX;
+        localStorage.helperStartY = this.helperStartY;
 
         try {
           if(this.imageData) {
@@ -146,6 +170,51 @@
         };
       },
 
+      helper: function() {
+        return {
+          'top': {
+            points: [
+              Math.round(this.helperStartX * this.gridSize) + 0.5,
+              Math.round(this.helperStartY * this.gridSize) + 0.5,
+              Math.round((this.helperStartX+this.helperSizeX) * this.gridSize) + 0.5,
+              Math.round(this.helperStartY * this.gridSize) + 0.5,
+            ],
+            stroke: this.helperColor,
+            strokeWidth: 1
+          },
+          'bottom': {
+            points: [
+              Math.round(this.helperStartX * this.gridSize) + 0.5,
+              Math.round((this.helperStartY+this.helperSizeY) * this.gridSize) + 0.5,
+              Math.round((this.helperStartX+this.helperSizeX) * this.gridSize) + 0.5,
+              Math.round((this.helperStartY+this.helperSizeY) * this.gridSize) + 0.5,
+            ],
+            stroke: this.helperColor,
+            strokeWidth: 1
+          },
+          'left': {
+            points: [
+              Math.round(this.helperStartX * this.gridSize) + 0.5,
+              Math.round(this.helperStartY * this.gridSize) + 0.5,
+              Math.round(this.helperStartX * this.gridSize) + 0.5,
+              Math.round((this.helperStartY+this.helperSizeY) * this.gridSize) + 0.5,
+            ],
+            stroke: this.helperColor,
+            strokeWidth: 1
+          },
+          'right': {
+            points: [
+              Math.round((this.helperStartX+this.helperSizeX) * this.gridSize) + 0.5,
+              Math.round((this.helperStartY) * this.gridSize) + 0.5,
+              Math.round((this.helperStartX+this.helperSizeX) * this.gridSize) + 0.5,
+              Math.round((this.helperStartY+this.helperSizeY) * this.gridSize) + 0.5,
+            ],
+            stroke: this.helperColor,
+            strokeWidth: 1
+          }
+        }
+      },
+
       grid: function() {
         let rows = [];
         let cols = [];
@@ -191,21 +260,65 @@
 
       window.addEventListener("keydown", e => {
         if(e.keyCode == 16) this.shiftPressed = true;
+        if(e.keyCode == 17) this.ctrlPressed = true;
+        if(e.keyCode == 18) this.altPressed = true;
       });
 
       window.addEventListener("keyup", e => {
         if(e.keyCode == 16) this.shiftPressed = false;
+        if(e.keyCode == 17) this.ctrlPressed = false;
+        if(e.keyCode == 18) this.altPressed = false;
         if(e.keyCode == 71) this.showGrid = !this.showGrid;
         if(e.keyCode == 66) this.toggleGrayScale();
         if(e.keyCode == 27) this.cleanWorkspace();
         if(e.keyCode == 70) this.flipImage();
+        if(e.keyCode == 72) this.showHelper= !this.showHelper;
+        if(e.keyCode == 73) this.showInfo = !this.showInfo;
 
-        if(this.shiftPressed) {
-          if(e.keyCode == 107 || e.keyCode == 87) {
+        if(this.shiftPressed && !this.altPressed) {
+          if(e.keyCode == 87) {
             this.gridPlus();
           }
-          if(e.keyCode == 109 || e.keyCode == 83) {
+          if(e.keyCode == 83) {
             this.gridMinus();
+          }
+        }
+
+        if(this.altPressed && !this.shiftPressed) {
+          if(e.keyCode == 87) {
+            this.helperSizeY -= 1
+            this.storeConfig();
+          }
+          if(e.keyCode == 83) {
+            this.helperSizeY += 1
+            this.storeConfig();
+          }
+          if(e.keyCode == 68) {
+            this.helperSizeX += 1
+            this.storeConfig();
+          }
+          if(e.keyCode == 65) {
+            this.helperSizeX -= 1
+            this.storeConfig();
+          }
+        }
+
+        if(this.altPressed && this.shiftPressed) {
+          if(e.keyCode == 87) {
+            this.helperStartY -= 1
+            this.storeConfig();
+          }
+          if(e.keyCode == 83) {
+            this.helperStartY += 1
+            this.storeConfig();
+          }
+          if(e.keyCode == 68) {
+            this.helperStartX += 1
+            this.storeConfig();
+          }
+          if(e.keyCode == 65) {
+            this.helperStartX -= 1
+            this.storeConfig();
           }
         }
       });
@@ -216,6 +329,13 @@
 
       if (localStorage.gridSize) {
         this.gridSize = localStorage.gridSize;
+      }
+
+      if (localStorage.helperStartY) {
+        this.helperStartX = parseInt(localStorage.helperStartX);
+        this.helperStartY = parseInt(localStorage.helperStartY);
+        this.helperSizeX = parseInt(localStorage.helperSizeX);
+        this.helperSizeY = parseInt(localStorage.helperSizeY);
       }
     },
 
@@ -228,8 +348,22 @@
 </script>
 
 <style>
-  #workspace, #tools, #workplace, #grid, .button {
+  #workspace, #tools, #workplace, #grid, #infos {
     position: absolute;
+  }
+
+  #infos {
+    left:0;
+    right:0;
+    top: 0;
+    bottom: 0;
+    margin-left:auto;
+    margin-right:auto;
+    margin-top: auto;
+    margin-bottom: auto;
+    width: 600px;
+    height: 600px;
+    background-color: #727272;
   }
 
   #workspace {
@@ -243,27 +377,6 @@
     position: absolute;
     top: 100px;
     color: white;
-  }
-
-  .button {
-    border-radius: 50%;
-    height: 56px;
-    width: 56px;
-    color: white;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
-    text-align: center;
-    vertical-align: middle;
-  }
-
-  .button span {
-    position: absolute;
-    left: 0;
-    top: 50%;
-    height: 100%;
-    width: 100%;
-    text-align: center;
-    margin-top: -10px;
-    color: #FFF;
   }
 
   #menu {
